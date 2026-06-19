@@ -1,7 +1,7 @@
 # A Multi-Agent Evaluation Framework for Clinical Mental Health Diagnosis
 
 <p align="center">
-  <img src="banner.png" alt="Multi-Agent Clinical Framework Banner" width="100%">
+  <img src="docs/banner.png" alt="Multi-Agent Clinical Framework Banner" width="100%">
 </p>
 
 <p align="center">
@@ -152,17 +152,37 @@ All models are deployed **locally through Ollama** to preserve the privacy of cl
 .
 ├── LICENSE                         # MIT License
 ├── README.md                       # This file
-├── agents.py                       # Core LangGraph agent nodes (Perception, Knowledge, Reasoning, Audit)
-├── graph.py                        # Default multi-agent workflow definition
-├── state.py                        # Shared graph state and data structures
-├── utils.py                        # DAIC-WOZ transcript and AU feature loading utilities
-├── data_split.py                   # Session-level development/validation/test split generator
-├── knowledge_base.py               # Psychiatric reference retrieval module (RAG + fallback)
-├── experiment_runner.py            # Single-agent, multi-agent, and ablation experiment orchestrator
-├── evaluate_results.py             # Metrics computation, confidence intervals, and statistical tests
-├── main.py                         # Simple benchmark entry point
-├── test_langgraph.py               # LangGraph connectivity tests
-└── txt_to_csv.py                   # Text-to-CSV data conversion utility
+├── main.py                         # Quick-start benchmark entry point
+├── requirements.txt                # Python dependencies
+├── .gitignore                      # Git ignore rules
+├── config/
+│   └── default.yaml                # Default model & pipeline configuration
+├── src/                            # Core framework source code
+│   ├── __init__.py
+│   ├── agents.py                   # LangGraph agent nodes (Perception, Knowledge, Reasoning, Audit)
+│   ├── graph.py                    # Multi-agent workflow definition
+│   ├── state.py                    # Shared graph state and data structures
+│   ├── utils.py                    # DAIC-WOZ transcript and AU feature loading utilities
+│   ├── data_split.py               # Session-level split generator
+│   ├── knowledge_base.py           # Psychiatric reference retrieval (RAG + fallback)
+│   └── txt_to_csv.py               # Text-to-CSV conversion utility
+├── experiments/                    # Experiment runners & evaluation
+│   ├── __init__.py
+│   ├── runner.py                   # Single/multi-agent and ablation orchestrator
+│   └── evaluate.py                 # Metrics, confidence intervals, and statistical tests
+├── tests/                          # Unit & connectivity tests
+│   ├── __init__.py
+│   └── test_langgraph.py           # LangGraph connectivity tests
+├── data/                           # Dataset directory (user-provided; gitignored)
+│   ├── raw/                        # Original DAIC-WOZ files
+│   ├── processed/                  # Runtime-generated processed data
+│   └── splits/                     # Pre-generated split CSVs
+│       ├── development.csv
+│       ├── validation.csv
+│       └── test.csv
+├── results/                        # Experiment outputs (gitignored)
+└── docs/                           # Documentation assets
+    └── banner.png
 ```
 
 ---
@@ -227,7 +247,7 @@ The experiments use the **DAIC-WOZ clinical interview dataset** for PHQ-8 depres
 ### Expected Directory Layout
 
 ```
-Dataset/
+data/raw/
 ├── data_split_Depression_AVEC2017.csv    # Session metadata and PHQ-8 labels
 ├── 300_TRANSCRIPT.csv                    # Sample transcript (session 300)
 ├── 300_CLNF_AUs.csv                      # Facial Action Units (session 300)
@@ -241,17 +261,17 @@ Dataset/
 Create the development, validation, and held-out test splits after data purification:
 
 ```bash
-python data_split.py --seed 42
+python src/data_split.py --seed 42
 ```
 
 **Output:**
 
 | File | Sessions | Purpose |
 |:---:|:---:|:---|
-| `data_splits/development.csv` | 128 (69.6%) | Model development & prompt tuning |
-| `data_splits/validation.csv` | 19 (10.3%) | Hyperparameter validation |
-| `data_splits/test.csv` | 37 (20.1%) | Held-out evaluation |
-| `data_splits/split_manifest.json` | — | Split metadata and counts |
+| `data/splits/development.csv` | 128 (69.6%) | Model development & prompt tuning |
+| `data/splits/validation.csv` | 19 (10.3%) | Hyperparameter validation |
+| `data/splits/test.csv` | 37 (20.1%) | Held-out evaluation |
+| `data/splits/split_manifest.json` | — | Split metadata and counts |
 
 The split is generated at the **session level** and validates that **no participant appears in more than one subset**.
 
@@ -278,8 +298,8 @@ The knowledge retrieval module falls back to **deterministic lexical matching** 
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/Rising-Stars-by-Sunshine/A-Multi-Agent-Evaluation-Framework-for-Clinical-Mental-Health-Diagnosis.git
-   cd A-Multi-Agent-Evaluation-Framework-for-Clinical-Mental-Health-Diagnosis
+   git clone https://github.com/Rising-Stars-by-Sunshine/clinagent.git
+   cd clinagent
    ```
 
 2. **Create a virtual environment:**
@@ -291,13 +311,13 @@ The knowledge retrieval module falls back to **deterministic lexical matching** 
 
 3. **Install dependencies:**
    ```bash
-   pip install langchain-core langchain-ollama langgraph pandas numpy scipy tqdm
+   pip install -r requirements.txt
    ```
 
 4. **Configure dataset path:**
    ```bash
    # Set the environment variable or pass --data-root in commands
-   export DAIC_WOZ_PATH=/path/to/your/Dataset
+   export DAIC_WOZ_PATH=/path/to/your/data/raw
    ```
 
 ---
@@ -309,7 +329,7 @@ The knowledge retrieval module falls back to **deterministic lexical matching** 
 Run the full multi-agent pipeline on the held-out test set:
 
 ```bash
-python main.py --data-root $DAIC_WOZ_PATH --split-csv data_splits/test.csv
+python main.py --data-root $DAIC_WOZ_PATH --split-csv data/splits/test.csv
 ```
 
 ### Running Multi-Agent Pipeline
@@ -317,9 +337,9 @@ python main.py --data-root $DAIC_WOZ_PATH --split-csv data_splits/test.csv
 Run the full multi-agent pipeline on the held-out test set across three random seeds:
 
 ```bash
-python experiment_runner.py \
+python experiments/runner.py \
   --data-root $DAIC_WOZ_PATH \
-  --split-csv data_splits/test.csv \
+  --split-csv data/splits/test.csv \
   --split-name test \
   --mode multi_agent \
   --config full_pipeline \
@@ -332,27 +352,27 @@ Compare against single-agent baselines using each model independently:
 
 ```bash
 # Llama 3.1 baseline
-python experiment_runner.py \
+python experiments/runner.py \
   --data-root $DAIC_WOZ_PATH \
-  --split-csv data_splits/test.csv \
+  --split-csv data/splits/test.csv \
   --split-name test \
   --mode single_agent \
   --single-agent-model llama3.1:8b \
   --output-dir results/single_llama31
 
 # Qwen 2.5 baseline
-python experiment_runner.py \
+python experiments/runner.py \
   --data-root $DAIC_WOZ_PATH \
-  --split-csv data_splits/test.csv \
+  --split-csv data/splits/test.csv \
   --split-name test \
   --mode single_agent \
   --single-agent-model qwen2.5:7b \
   --output-dir results/single_qwen25
 
 # DeepSeek-R1 baseline
-python experiment_runner.py \
+python experiments/runner.py \
   --data-root $DAIC_WOZ_PATH \
-  --split-csv data_splits/test.csv \
+  --split-csv data/splits/test.csv \
   --split-name test \
   --mode single_agent \
   --single-agent-model deepseek-r1:8b \
@@ -365,17 +385,17 @@ Systematically evaluate the contribution of each agent:
 
 | Configuration | Agents Enabled | Command |
 |:---:|:---|:---|
-| `full_pipeline` | Perception + Knowledge + Reasoning + Audit | `python experiment_runner.py --data-root $DAIC_WOZ_PATH --split-csv data_splits/test.csv --split-name test --mode multi_agent --config full_pipeline --output-dir results/full_pipeline` |
-| `audit_only` | Perception + Reasoning + Audit | `python experiment_runner.py --data-root $DAIC_WOZ_PATH --split-csv data_splits/test.csv --split-name test --mode multi_agent --config audit_only --output-dir results/audit_only` |
-| `knowledge_no_rag` | Perception + Knowledge (static) + Reasoning | `python experiment_runner.py --data-root $DAIC_WOZ_PATH --split-csv data_splits/test.csv --split-name test --mode multi_agent --config knowledge_no_rag --output-dir results/knowledge_no_rag` |
-| `basic_core_only` | Perception + Reasoning only | `python experiment_runner.py --data-root $DAIC_WOZ_PATH --split-csv data_splits/test.csv --split-name test --mode multi_agent --config basic_core_only --output-dir results/basic_core_only` |
+| `full_pipeline` | Perception + Knowledge + Reasoning + Audit | `python experiments/runner.py --data-root $DAIC_WOZ_PATH --split-csv data/splits/test.csv --split-name test --mode multi_agent --config full_pipeline --output-dir results/full_pipeline` |
+| `audit_only` | Perception + Reasoning + Audit | `python experiments/runner.py --data-root $DAIC_WOZ_PATH --split-csv data/splits/test.csv --split-name test --mode multi_agent --config audit_only --output-dir results/audit_only` |
+| `knowledge_no_rag` | Perception + Knowledge (static) + Reasoning | `python experiments/runner.py --data-root $DAIC_WOZ_PATH --split-csv data/splits/test.csv --split-name test --mode multi_agent --config knowledge_no_rag --output-dir results/knowledge_no_rag` |
+| `basic_core_only` | Perception + Reasoning only | `python experiments/runner.py --data-root $DAIC_WOZ_PATH --split-csv data/splits/test.csv --split-name test --mode multi_agent --config basic_core_only --output-dir results/basic_core_only` |
 
 ### Evaluating Results
 
 Summarize MAE, standard deviation across seeds, bootstrap confidence intervals, and process metrics:
 
 ```bash
-python evaluate_results.py \
+python experiments/evaluate.py \
   --inputs \
     results/full_pipeline \
     results/audit_only \
@@ -427,7 +447,7 @@ The paper reports that the proposed multi-agent pipeline improves PHQ-8 severity
 
 Ablation studies further indicate that the **Knowledge** and **Audit** modules help mitigate reasoning drift and unsupported clinical inference.
 
-> **Note:** Exact values may vary with local Ollama versions, model checkpoints, hardware, and decoding behavior. The final numbers used for reporting should be generated from `evaluate_results.py` using the fixed split and seeds described above.
+> **Note:** Exact values may vary with local Ollama versions, model checkpoints, hardware, and decoding behavior. The final numbers used for reporting should be generated from `experiments/evaluate.py` using the fixed split and seeds described above.
 
 ---
 
@@ -454,6 +474,17 @@ Ablation studies further indicate that the **Knowledge** and **Audit** modules h
 > - The PHQ-8 is a screening tool, not a diagnostic instrument. Clinical diagnosis requires evaluation by qualified healthcare professionals.
 > - Users are responsible for complying with all applicable data protection regulations (HIPAA, GDPR, etc.) when using this framework with real patient data.
 
+---
+
+## Citation
+
+```bibtex
+@article{clinagent2026,
+  title={ClinAgent: A Multi-Agent Evaluation Framework for Clinical Mental Health Diagnosis},
+  author={...},
+  year={2026}
+}
+```
 
 ---
 
@@ -489,7 +520,6 @@ SOFTWARE.
 
 ## Acknowledgments
 
-
 - **Dataset:** The [DAIC-WOZ Database](https://dcapswoz.ict.usc.edu/) from USC Institute for Creative Technologies
 - **Models:** [Meta Llama](https://llama.meta.com/), [Alibaba Qwen](https://qwenlm.github.io/), [DeepSeek](https://www.deepseek.com/), [Nomic](https://www.nomic.ai/)
 - **Framework:** [LangChain](https://www.langchain.com/) and [LangGraph](https://langchain-ai.github.io/langgraph/)
@@ -508,9 +538,9 @@ Contributions are welcome! Please feel free to submit a Pull Request. For major 
 4. Push to the branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
-
 ---
 
 <p align="center">
   <sub>Built with ❤️ for advancing responsible AI in mental health research.</sub>
 </p>
+```
