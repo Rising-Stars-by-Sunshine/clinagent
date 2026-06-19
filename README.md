@@ -474,17 +474,6 @@ Ablation studies further indicate that the **Knowledge** and **Audit** modules h
 > - The PHQ-8 is a screening tool, not a diagnostic instrument. Clinical diagnosis requires evaluation by qualified healthcare professionals.
 > - Users are responsible for complying with all applicable data protection regulations (HIPAA, GDPR, etc.) when using this framework with real patient data.
 
----
-
-## Citation
-
-```bibtex
-@article{clinagent2026,
-  title={ClinAgent: A Multi-Agent Evaluation Framework for Clinical Mental Health Diagnosis},
-  author={...},
-  year={2026}
-}
-```
 
 ---
 
