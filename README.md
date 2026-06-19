@@ -1,4 +1,4 @@
-# A Multi-Agent Evaluation Framework for Clinical Mental Health Diagnosis
+# A Multi-Agent Evaluation Framework for Clinical Mental Health Diagnosis [![DOI](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.20755233-168BC2?logo=zenodo&logoColor=white)](https://doi.org/10.5281/zenodo.20755233)
 
 <p align="center">
   <img src="docs/banner.png" alt="Multi-Agent Clinical Framework Banner" width="100%">
