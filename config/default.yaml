@@ -1,0 +1,12 @@
+# Default pipeline configuration
+models:
+  perception: llama3.1:8b
+  knowledge: nomic-embed-text
+  reasoning: deepseek-r1:8b
+  audit: qwen2.5:7b
+
+pipeline:
+  temperature_perception: 0.1
+  temperature_reasoning: 0.2
+  temperature_audit: 0.0
+  rag_top_k: 3
